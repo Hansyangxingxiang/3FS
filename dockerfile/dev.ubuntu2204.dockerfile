@@ -26,18 +26,18 @@ RUN apt-get update                                    &&\
 
   ARG TARGETARCH
   ARG FDB_VERSION=7.3.63
-  ARG FDB_ARCH_SUFFIX
-  RUN case "${TARGETARCH}" in \
-      amd64) FDB_ARCH_SUFFIX="amd64" ;; \
-      arm64) FDB_ARCH_SUFFIX="aarch64" ;; \
-      *) echo "Unsupported architecture: ${TARGETARCH}"; exit 1 ;; \
+  RUN FDB_ARCH_SUFFIX=$(dpkg --print-architecture) && \
+    case "${FDB_ARCH_SUFFIX}" in \
+      amd64) ;; \
+      arm64) FDB_ARCH_SUFFIX="aarch64" ;; \ 
+      *) echo "Unsupported architecture: ${FDB_ARCH_SUFFIX}"; exit 1 ;; \
       esac && \
       FDB_CLIENT_URL="https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb" && \
       FDB_SERVER_URL="https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb" && \
       wget -q "${FDB_CLIENT_URL}" && \
       wget -q "${FDB_SERVER_URL}" && \
       dpkg -i foundationdb-clients_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb && \
-      dpkg -i foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb && \
+      # dpkg -i foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb && \
       rm foundationdb-clients_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb
 
 ARG LIBFUSE_VERSION=3.16.2
