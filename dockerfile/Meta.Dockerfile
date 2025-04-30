@@ -1,4 +1,4 @@
-FROM ubuntu2004-3fsbuilder:latest as builder
+FROM yangxingxiang/ubuntu2004-3fs-builder:latest as builder
 
 WORKDIR /3fs
 COPY . .
@@ -35,8 +35,8 @@ RUN FDB_ARCH_SUFFIX=$(dpkg --print-architecture) && \
       FDB_SERVER_URL="https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb" && \
       wget -q "${FDB_CLIENT_URL}" && \
       wget -q "${FDB_SERVER_URL}" && \
-      dpkg -i foundationdb-clients_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb && \
-      dpkg -i --force-all foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb 
+      dpkg -i foundationdb-clients_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb 
+      # dpkg -i --force-all foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb 
       # rm foundationdb-clients_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb 
       # rm foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb
 
