@@ -40,13 +40,32 @@ RUN FDB_ARCH_SUFFIX=$(dpkg --print-architecture) && \
       # rm foundationdb-clients_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb 
       # rm foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb
 
+
+ARG CLICK_VERSION=25.3.1.2703
+RUN CLICK_ARCH_SUFFIX=$(dpkg --print-architecture) && \
+    case "${CLICK_ARCH_SUFFIX}" in \
+      amd64) ;; \
+      arm64) CLICK_ARCH_SUFFIX="aarch64" ;; \ 
+      *) echo "Unsupported architecture: ${CLICK_ARCH_SUFFIX}"; exit 1 ;; \
+      esac && \
+      CLICK_CLIENT_URL="https://packages.clickhouse.com/deb/pool/main/c/clickhouse/clickhouse-client_${CLICK_VERSION}_${CLICK_ARCH_SUFFIX}.deb" && \
+      CLICK_COMMON_URL="https://packages.clickhouse.com/deb/pool/main/c/clickhouse/clickhouse-common-static_${CLICK_ARCH_SUFFIX}.deb" && \
+      wget -q "${CLICK_CLIENT_URL}" && \
+      wget -q "${CLICK_COMMON_URL}" && \
+      dpkg -i clickhouse-client_${CLICK_VERSION}_${CLICK_ARCH_SUFFIX}.deb clickhouse-common-static_${CLICK_ARCH_SUFFIX}.deb
+      # dpkg -i --force-all foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb 
+      # rm foundationdb-clients_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb 
+      # rm foundationdb-server_${FDB_VERSION}-1_${FDB_ARCH_SUFFIX}.deb
+
 RUN wget https://raw.githubusercontent.com/Mellanox/container_scripts/refs/heads/master/ibdev2netdev -O /usr/sbin/ibdev2netdev && \
 chmod +x /usr/sbin/ibdev2netdev
 
 RUN mkdir -p /opt/3fs/{bin,etc} && mkdir -p /var/log/3fs
-COPY --from=builder /3fs/build_dir/bin/storage_main   /opt/3fs/bin/
-COPY --from=builder /3fs/configs/storage_main*.toml /opt/3fs/etc/
-COPY --from=builder /3fs/deploy/systemd/storage_main.service /usr/lib/systemd/system/
+COPY --from=builder /3fs/build_dir/bin/monitor_collector_main /opt/3fs/bin/
+COPY --from=builder /3fs/configs/monitor_collector_main.toml /opt/3fs/etc/
+COPY --from=builder /3fs/deploy/sql/3fs-monitor.sql /opt/3fs/etc/
+COPY --from=builder /3fs/deploy/systemd/monitor_collector_main.service /usr/lib/systemd/system/
+
 
 COPY --from=builder /3fs/build_dir/bin/admin_cli /opt/3fs/bin/
 COPY --from=builder /3fs/configs/admin_cli.toml /opt/3fs/etc/
@@ -54,5 +73,5 @@ COPY --from=builder /3fs/configs/admin_cli.toml /opt/3fs/etc/
 WORKDIR /opt/3fs/bin
 
 # EXPOSE 9100
-CMD ["systemctl start storage_main"]
+CMD ["systemctl start monitor_collector_main"]
 
