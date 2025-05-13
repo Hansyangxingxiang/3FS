@@ -1,0 +1,25 @@
+#!/bin/bash
+source "$(dirname "$0")/_3fs_common.sh"
+
+function run_mgmtd() {
+    if [[ ! -f "$CONFIG_DONE_FLAG" ]]; then    
+        config_cluster_id
+        # env: FDB_CLUSTER, MGMTD_SERVER_ADDRESSES, MGMTD_NODE_ID, DEVICE_FILTER, REMOTE_IP, CLUSTER_ID
+        config_admin_cli
+        echo ${FDB_CLUSTER} >/etc/foundationdb/fdb.cluster
+        # mgmtd_main_launcher.toml
+        sed -i "/\[fdb\]/,/^\[/{s|^clusterFile.*|clusterFile = '/etc/foundationdb/fdb.cluster'|}" /opt/3fs/etc/mgmtd_main_launcher.toml
+        # mgmtd_main_app.toml
+        sed -i "s/^node_id.*/node_id = ${MGMTD_NODE_ID}/" /opt/3fs/etc/mgmtd_main_app.toml
+        # mgmtd_main.toml
+        sed -i "s|remote_ip = .*|remote_ip = '${REMOTE_IP}'|g" /opt/3fs/etc/mgmtd_main.toml
+        # device_filter
+        if [[ -n "${DEVICE_FILTER}" ]]; then
+            sed -i "s|device_filter = \[\]|device_filter = [\"${DEVICE_FILTER//,/\",\"}\"]|g" /opt/3fs/etc/mgmtd_main_launcher.toml
+        fi
+
+        touch "$CONFIG_DONE_FLAG"
+    fi
+    # run mgmtd
+    /opt/3fs/bin/mgmtd_main --launcher_cfg /opt/3fs/etc/mgmtd_main_launcher.toml --app-cfg /opt/3fs/etc/mgmtd_main_app.toml
+}

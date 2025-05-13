@@ -49,11 +49,13 @@ COPY --from=builder /3fs/configs/meta_main*.toml /opt/3fs/etc/
 COPY --from=builder /3fs/deploy/systemd/meta_main.service /usr/lib/systemd/system/
 COPY --from=builder /3fs/build_dir/third_party/jemalloc/lib/libjemalloc.so.2 /usr/lib/
 
+COPY --from=builder /3fs/deploy/scripts/_3fs_common.sh /opt/3fs/scripts/
+COPY --from=builder /3fs/deploy/scripts/start_meta.sh /opt/3fs/scripts/
+
 COPY --from=builder /3fs/build_dir/bin/admin_cli /opt/3fs/bin/
 COPY --from=builder /3fs/configs/admin_cli.toml /opt/3fs/etc/
 
 WORKDIR /opt/3fs/bin
 
-# EXPOSE 9100
-CMD ["systemctl start meta_main"]
+CMD ["/opt/3fs/scripts/start_meta.sh"]
 
