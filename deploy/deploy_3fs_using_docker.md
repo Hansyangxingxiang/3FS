@@ -22,13 +22,10 @@
 | Storage1  | Ubuntu 20.04 | 192.168.1.2  | 128GB   | 2×7TB NVMe SSD  | RoCE       |
 | Storage2  | Ubuntu 20.04 | 192.168.1.3  | 128GB   | 2×7TB NVMe SSD  | RoCE       |
 
-### Network Configuration
-1. Configure RDMA NICs with static IP addresses
-2. Verify RDMA connectivity between nodes:
-   ```bash
-   ib_write_bw  # Run on target node
-   ib_write_lat  # Run on initiator node
-   ```
+> **RDMA Configuration**
+> 1. Assign IP addresses to RDMA NICs. Multiple RDMA NICs (InfiniBand or RoCE) are supported on each node.
+> 2. Check RDMA connectivity between nodes using `ib_write_bw`.
+
 
 ## Build Docker Images <a name="build-docker-images"></a>
 
