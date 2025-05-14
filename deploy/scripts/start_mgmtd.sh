@@ -2,6 +2,14 @@
 source "$(dirname "$0")/_3fs_common.sh"
 
 function run_mgmtd() {
+    # 环境变量检查
+    for var in FDB_CLUSTER MGMTD_SERVER_ADDRESSES MGMTD_NODE_ID REMOTE_IP CLUSTER_ID; do
+        if [[ -z "${!var}" ]]; then
+            echo "ERROR: Environment variable $var is not set"
+            exit 1
+        fi
+    done
+
     if [[ ! -f "$CONFIG_DONE_FLAG" ]]; then    
         config_cluster_id
         # env: FDB_CLUSTER, MGMTD_SERVER_ADDRESSES, MGMTD_NODE_ID, DEVICE_FILTER, REMOTE_IP, CLUSTER_ID

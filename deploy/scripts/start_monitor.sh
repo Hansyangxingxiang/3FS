@@ -1,9 +1,17 @@
 #!/bin/bash
 source "$(dirname "$0")/_3fs_common.sh"
 
-function run_monitor() { 
+function run_monitor() {
+    # 环境变量检查
+    for var in CLICKHOUSE_DB CLICKHOUSE_HOST CLICKHOUSE_PASSWD CLICKHOUSE_PORT CLICKHOUSE_USER; do
+        if [[ -z "${!var}" ]]; then
+            echo "ERROR: Environment variable $var is not set"
+            exit 1
+        fi
+    done
+
     if [[ ! -f "$CONFIG_DONE_FLAG" ]]; then
-        # env: CLICKHOUSE_DB, CLICKHOUSE_HOST, CLICKHOUSE_PASSWD, CLICKHOUSE_PORT, CLICKHOUSE_USER, DEVICE_FILTER, CLUSTER_ID
+        # env: CLICKHOUSE_DB, CLICKHOUSE_HOST, CLICKHOUSE_PASSWD, CLICKHOUSE_PORT, CLICKHOUSE_USER, DEVICE_FILTER
         # monitor_collector_main.toml
         sed -i "/^\[server.monitor_collector.reporter.clickhouse\]/,/^\s*$/{
         s/db = '.*/db = '${CLICKHOUSE_DB}'/;
