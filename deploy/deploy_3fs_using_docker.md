@@ -97,19 +97,18 @@ This section provides a manual deployment 3FS in Docker environments Guide
 ---
 ## Step 3: Deploy Monitor Service on Meta Node
    ```bash
-   docker run --name 3fs_monitor \
+   docker run --name hf3fs-monitor \
                   --privileged \
                   --network host \
                   -d --restart always \
-                  --env CLUSTER_ID=${CLUSTER_ID} \
-                  --env CLICKHOUSE_DB=${CLICKHOUSE_DB} \
-                  --env CLICKHOUSE_HOST=${CLICKHOUSE_HOST} \
-                  --env CLICKHOUSE_PASSWD=${CLICKHOUSE_PASSWD} \
-                  --env CLICKHOUSE_PORT=${CLICKHOUSE_PORT} \
-                  --env CLICKHOUSE_USER=${CLICKHOUSE_USER} \
-                  --env FDB_CLUSTER=${FDB_CLUSTER} \
-                  --env DEVICE_FILTER=${DEVICE_FILTER} \
-                  ${IMAGE} \
+                  --env CLUSTER_ID=stage \
+                  --env CLICKHOUSE_DB=3fs \
+                  --env CLICKHOUSE_HOST=10.10.1.144 \
+                  --env CLICKHOUSE_PASSWD=3fs \
+                  --env CLICKHOUSE_PORT=9000 \
+                  --env CLICKHOUSE_USER=default \
+                  --env DEVICE_FILTER=mlx5_2 \
+                  hf3fs-monitor 
    ```
 
 ---

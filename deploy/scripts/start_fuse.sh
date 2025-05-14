@@ -27,6 +27,9 @@ function run_fuse() {
     fi
     # run fuse
     /opt/3fs/bin/hf3fs_fuse_main --launcher_cfg /opt/3fs/etc/hf3fs_fuse_main_launcher.toml
+
+    # Prevent the main process from exiting, thereby avoiding container termination.
+    tail -f /dev/null
 }
 
 

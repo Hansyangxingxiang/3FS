@@ -28,6 +28,8 @@ function run_storage() {
     fi
     # run storage
     /opt/3fs/bin/storage_main --launcher_cfg /opt/3fs/etc/storage_main_launcher.toml --app-cfg /opt/3fs/etc/storage_main_app.toml
+    # Prevent the main process from exiting, thereby avoiding container termination.
+    tail -f /dev/null
 }
 
 

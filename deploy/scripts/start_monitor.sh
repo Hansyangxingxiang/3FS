@@ -3,7 +3,6 @@ source "$(dirname "$0")/_3fs_common.sh"
 
 function run_monitor() { 
     if [[ ! -f "$CONFIG_DONE_FLAG" ]]; then
-        config_cluster_id
         # env: CLICKHOUSE_DB, CLICKHOUSE_HOST, CLICKHOUSE_PASSWD, CLICKHOUSE_PORT, CLICKHOUSE_USER, DEVICE_FILTER, CLUSTER_ID
         # monitor_collector_main.toml
         sed -i "/^\[server.monitor_collector.reporter.clickhouse\]/,/^\s*$/{
@@ -22,6 +21,8 @@ function run_monitor() {
     fi
     # run monitor
     /opt/3fs/bin/monitor_collector_main --cfg /opt/3fs/etc/monitor_collector_main.toml
+    # Prevent the main process from exiting, thereby avoiding container termination.
+    tail -f /dev/null
 }
 
 

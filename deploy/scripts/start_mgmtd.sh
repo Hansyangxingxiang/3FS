@@ -22,4 +22,6 @@ function run_mgmtd() {
     fi
     # run mgmtd
     /opt/3fs/bin/mgmtd_main --launcher_cfg /opt/3fs/etc/mgmtd_main_launcher.toml --app-cfg /opt/3fs/etc/mgmtd_main_app.toml
+    # Prevent the main process from exiting, thereby avoiding container termination.
+    tail -f /dev/null
 }

@@ -19,11 +19,13 @@ function run_meta() {
         fi
         # init meta
         /opt/3fs/bin/admin_cli -cfg /opt/3fs/etc/admin_cli.toml "set-config --type META --file /opt/3fs/etc/meta_main.toml"
-        
+
         touch "$CONFIG_DONE_FLAG"
     fi
     # run meta
     /opt/3fs/bin/meta_main --launcher_cfg /opt/3fs/etc/meta_main_launcher.toml --app-cfg /opt/3fs/etc/meta_main_app.toml
+    # Prevent the main process from exiting, thereby avoiding container termination.
+    tail -f /dev/null
 }
 
 
