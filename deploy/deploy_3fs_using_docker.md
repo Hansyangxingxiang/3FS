@@ -94,7 +94,7 @@ docker run --name hf3fs-monitor \
   --network host \
   -d --restart always \
   --env CLICKHOUSE_DB=3fs \
-  --env CLICKHOUSE_HOST=10.10.1.144 \
+  --env CLICKHOUSE_HOST=192.168.1.1 \
   --env CLICKHOUSE_PASSWD=3fs \
   --env CLICKHOUSE_PORT=9000 \
   --env CLICKHOUSE_USER=default \
@@ -109,10 +109,10 @@ docker run --name hf3fs-mgmtd \
   --network host \
   -d --restart always \
   --env CLUSTER_ID=stage \
-  --env FDB_CLUSTER=docker:docker@10.10.1.144:4500 \
+  --env FDB_CLUSTER=docker:docker@192.168.1.1:4500 \
   --env MGMTD_NODE_ID=1 \
   --env DEVICE_FILTER=mlx5_2 \
-  --env REMOTE_IP=10.10.1.114:10000 \
+  --env REMOTE_IP=192.168.1.1:10000 \
   hf3fs-mgmtd
 ```
 
@@ -123,11 +123,11 @@ docker run --name 3fs_meta \
   -d --restart always \
   --network host \
   --env CLUSTER_ID=stage \
-  --env FDB_CLUSTER=docker:docker@10.10.1.144:4500 \
-  --env MGMTD_SERVER_ADDRESSES=RDMA://10.10.1.114:8000 \
+  --env FDB_CLUSTER=docker:docker@192.168.1.1:4500 \
+  --env MGMTD_SERVER_ADDRESSES=RDMA://192.168.1.1:8000 \
   --env META_NODE_ID=100 \
   --env DEVICE_FILTER=mlx5_2 \
-  --env REMOTE_IP=10.10.1.114:10000 \
+  --env REMOTE_IP=192.168.1.1:10000 \
   hf3fs-meta
 ```
 
@@ -152,12 +152,12 @@ docker run --name hf3fs-storage \
   --network host \
   -v /storage:/storage \
   --env CLUSTER_ID=stage \
-  --env FDB_CLUSTER=docker:docker@10.10.1.144:4500 \
+  --env FDB_CLUSTER=docker:docker@192.168.1.1:4500 \
   --env MGMTD_SERVER_ADDRESSES=RDMA://10.10.1.114:8000 \
   --env STORAGE_NODE_ID=10001 \
   --env TARGET_PATHS='/storage/data0/3fs,/storage/data1/3fs' \
   --env DEVICE_FILTER=mlx5_2 \
-  --env REMOTE_IP=10.10.1.114:10000 \
+  --env REMOTE_IP=192.168.1.1:10000 \
   hf3fs-storage
 ```
 
@@ -169,12 +169,12 @@ docker run --name hf3fs-storage \
   --network host \
   -v /storage:/storage \
   --env CLUSTER_ID=stage \
-  --env FDB_CLUSTER=docker:docker@10.10.1.144:4500 \
+  --env FDB_CLUSTER=docker:docker@192.168.1.1:4500 \
   --env MGMTD_SERVER_ADDRESSES=RDMA://10.10.1.114:8000 \
   --env STORAGE_NODE_ID=10002 \
   --env TARGET_PATHS='/storage/data0/3fs,/storage/data1/3fs' \
   --env DEVICE_FILTER=mlx5_2 \
-  --env REMOTE_IP=10.10.1.114:10000 \
+  --env REMOTE_IP=192.168.1.1:10000 \
   hf3fs-storage
 ```
 
@@ -204,7 +204,7 @@ docker cp output/generated_chain_table.csv hf3fs-mgmtd:/opt/3fs/etc/
 ```bash
 docker exec -it hf3fs-mgmtd /bin/sh
 /opt/3fs/bin/admin_cli -cfg /opt/3fs/etc/admin_cli.toml \
-  --config.mgmtd_client.mgmtd_server_addresses '["RDMA://10.10.1.144:8000"]' \
+  --config.mgmtd_client.mgmtd_server_addresses '["RDMA://192.168.1.1:8000"]' \
   "user-add --root --admin 0 root"
 ```
 
@@ -234,9 +234,9 @@ docker run --name hf3fs-fuse \
   --network host \
   --mount type=bind,source=/mnt/3fs,target=/mnt/3fs,bind-propagation=shared \
   --env CLUSTER_ID=stage \
-  --env FDB_CLUSTER=docker:docker@10.10.1.144:4500 \
-  --env MGMTD_SERVER_ADDRESSES=RDMA://10.10.1.114:8000 \
-  --env REMOTE_IP=10.10.1.114:10000 \
+  --env FDB_CLUSTER=docker:docker@192.168.1.1:4500 \
+  --env MGMTD_SERVER_ADDRESSES=RDMA://192.168.1.1:8000 \
+  --env REMOTE_IP=192.168.1.1:10000 \
   --env DEVICE_FILTER=mlx5_2 \
   --env TOKEN=${TOKEN} \
   hf3fs-fuse

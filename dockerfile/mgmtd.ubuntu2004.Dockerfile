@@ -5,11 +5,7 @@ COPY . .
 #RUN cmake -S . -B build_dir -DCMAKE_CXX_COMPILER=clang++-14 -DCMAKE_C_COMPILER=clang-14 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \ 
 #    && cmake --build build_dir -j `nproc`
 
-
-
-# 运行时镜像
 FROM ubuntu:20.04
-# 设置国内镜像源
 RUN sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates systemd vim net-tools gdb\

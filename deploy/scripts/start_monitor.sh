@@ -2,7 +2,6 @@
 source "$(dirname "$0")/_3fs_common.sh"
 
 function run_monitor() {
-    # 环境变量检查
     for var in CLICKHOUSE_DB CLICKHOUSE_HOST CLICKHOUSE_PASSWD CLICKHOUSE_PORT CLICKHOUSE_USER; do
         if [[ -z "${!var}" ]]; then
             echo "ERROR: Environment variable $var is not set"
