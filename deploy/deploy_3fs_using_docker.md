@@ -80,7 +80,7 @@ docker run -d \
   foundationdb/foundationdb:7.3.63
 
 # Configure FoundationDB
-docker exec -it foundationdb-server /bin/sh -c "echo 'export PUBLIC_IP=10.10.1.114' > /var/fdb/.fdbenv"
+docker exec -it foundationdb-server /bin/sh -c "echo 'export PUBLIC_IP=192.168.1.1' > /var/fdb/.fdbenv"
 docker restart foundationdb-server
 
 # Initialize database
@@ -153,7 +153,7 @@ docker run --name hf3fs-storage \
   -v /storage:/storage \
   --env CLUSTER_ID=stage \
   --env FDB_CLUSTER=docker:docker@192.168.1.1:4500 \
-  --env MGMTD_SERVER_ADDRESSES=RDMA://10.10.1.114:8000 \
+  --env MGMTD_SERVER_ADDRESSES=RDMA://192.168.1.1:8000 \
   --env STORAGE_NODE_ID=10001 \
   --env TARGET_PATHS='/storage/data0/3fs,/storage/data1/3fs' \
   --env DEVICE_FILTER=mlx5_2 \
@@ -170,7 +170,7 @@ docker run --name hf3fs-storage \
   -v /storage:/storage \
   --env CLUSTER_ID=stage \
   --env FDB_CLUSTER=docker:docker@192.168.1.1:4500 \
-  --env MGMTD_SERVER_ADDRESSES=RDMA://10.10.1.114:8000 \
+  --env MGMTD_SERVER_ADDRESSES=RDMA://192.168.1.1:8000 \
   --env STORAGE_NODE_ID=10002 \
   --env TARGET_PATHS='/storage/data0/3fs,/storage/data1/3fs' \
   --env DEVICE_FILTER=mlx5_2 \
