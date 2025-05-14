@@ -36,6 +36,8 @@
    ```bash
    git clone https://github.com/your-org/3fs.git
    cd 3fs
+   git submodule update --init --recursive
+   ./patches/apply.sh
    ```
 
 2. Build base environment:
