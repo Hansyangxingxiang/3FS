@@ -2,7 +2,6 @@
 source "$(dirname "$0")/_3fs_common.sh"
 
 function run_fuse() {
-    # 环境变量检查
     for var in FDB_CLUSTER MGMTD_SERVER_ADDRESSES TOKEN REMOTE_IP CLUSTER_ID; do
         if [[ -z "${!var}" ]]; then
             echo "ERROR: Environment variable $var is not set"
@@ -19,7 +18,7 @@ function run_fuse() {
         echo ${TOKEN} >/opt/3fs/etc/token.txt
         # hf3fs_fuse_main_launcher.toml
         sed -i "s|mgmtd_server_addresses = \[\]|mgmtd_server_addresses = [\"${MGMTD_SERVER_ADDRESSES//,/\",\"}\"]|g" /opt/3fs/etc/hf3fs_fuse_main_launcher.toml
-        sed -i "s|mountpoint = ''|mountpoint = ' /3fs/stage'|g" /opt/3fs/etc/hf3fs_fuse_main_launcher.toml
+        sed -i "s|mountpoint = ''|mountpoint = '/3fs/stage'|g" /opt/3fs/etc/hf3fs_fuse_main_launcher.toml
         sed -i "s|token_file = ''|token_file = '/opt/3fs/etc/token.txt'|g" /opt/3fs/etc/hf3fs_fuse_main_launcher.toml
         # hf3fs_fuse_main.toml
         sed -i "s|remote_ip = ''|remote_ip = \"${REMOTE_IP}\"|g" /opt/3fs/etc/hf3fs_fuse_main.toml

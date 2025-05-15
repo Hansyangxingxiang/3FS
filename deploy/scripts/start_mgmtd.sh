@@ -25,6 +25,16 @@ function run_mgmtd() {
             sed -i "s|device_filter = \[\]|device_filter = [\"${DEVICE_FILTER//,/\",\"}\"]|g" /opt/3fs/etc/mgmtd_main_launcher.toml
         fi
 
+        if [[ -z "${STRIP_SIZE}" ]]; then
+           STRIP_SIZE=6 
+        fi
+
+        /opt/3fs/bin/admin_cli -cfg /opt/3fs/etc/admin_cli.toml "init-cluster --mgmtd /opt/3fs/etc/mgmtd_main.toml 1 1048576 $STRIP_SIZE"
+        if [ $? -ne 0 ]; then
+            echo "ERROR: init-cluster failed"
+            exit 1
+        fi
+
         touch "$CONFIG_DONE_FLAG"
     fi
     # run mgmtd
@@ -32,3 +42,6 @@ function run_mgmtd() {
     # Prevent the main process from exiting, thereby avoiding container termination.
     tail -f /dev/null
 }
+
+
+run_mgmtd

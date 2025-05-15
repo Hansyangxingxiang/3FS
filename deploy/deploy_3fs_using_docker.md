@@ -59,11 +59,18 @@ docker pull clickhouse/clickhouse-server:25.3.1.2703
 
 # Start container
 docker run -d \
-  -p9000:9000 \
+  -p19000:9000 \
   -e CLICKHOUSE_PASSWORD=3fs \
   --name clickhouse-server \
   --ulimit nofile=262144:262144 \
   clickhouse/clickhouse-server:25.3.1.2703
+
+# Copy 3fs-monitor.sql to clickhouse-server docker container
+docker cp 3fs-monitor.sql  clickhouse-server:/root
+
+# Login clickhouse-server docker container and import the SQL file into ClickHouse:
+docker exec -it clickhouse-server /bin/bash
+clickhouse-client -n < /root/3fs-monitor.sql
 ```
 
 ### FoundationDB Service <a name="foundationdb-service"></a>
@@ -85,6 +92,9 @@ docker restart foundationdb-server
 
 # Initialize database
 docker exec foundationdb-server /usr/bin/fdbcli -C /var/fdb/fdb.cluster --exec 'configure new single ssd'
+
+# Check status
+docker exec foundationdb-server /usr/bin/fdbcli -C /var/fdb/fdb.cluster --exec 'status'
 ```
 
 ### Monitor Service <a name="monitor-service"></a>
@@ -96,7 +106,7 @@ docker run --name hf3fs-monitor \
   --env CLICKHOUSE_DB=3fs \
   --env CLICKHOUSE_HOST=192.168.1.1 \
   --env CLICKHOUSE_PASSWD=3fs \
-  --env CLICKHOUSE_PORT=9000 \
+  --env CLICKHOUSE_PORT=19000 \
   --env CLICKHOUSE_USER=default \
   --env DEVICE_FILTER=mlx5_2 \
   hf3fs-monitor
@@ -110,6 +120,7 @@ docker run --name hf3fs-mgmtd \
   -d --restart always \
   --env CLUSTER_ID=stage \
   --env FDB_CLUSTER=docker:docker@192.168.1.1:4500 \
+  --env MGMTD_SERVER_ADDRESSES=RDMA://192.168.1.1:8000 \
   --env MGMTD_NODE_ID=1 \
   --env DEVICE_FILTER=mlx5_2 \
   --env REMOTE_IP=192.168.1.1:10000 \
@@ -118,7 +129,7 @@ docker run --name hf3fs-mgmtd \
 
 ### Metadata Service <a name="metadata-service"></a>
 ```bash
-docker run --name 3fs_meta \
+docker run --name hf3fs-meta \
   --privileged \
   -d --restart always \
   --network host \
@@ -183,14 +194,14 @@ docker run --name hf3fs-storage \
 1. Generate cluster configuration:
 ```bash
 pip install -r deploy/data_placement/requirements.txt
-python deploy/data_placement/src/model/data_placement.py \
+python3 deploy/data_placement/src/model/data_placement.py \
   -ql -relax -type CR --num_nodes 2 --replication_factor 2 --min_targets_per_disk 6
 
-python deploy/data_placement/src/setup/gen_chain_table.py \
+python3 deploy/data_placement/src/setup/gen_chain_table.py \
   --chain_table_type CR --node_id_begin 10001 --node_id_end 10002 \
   --num_disks_per_node 2 --num_targets_per_disk 6 \
   --target_id_prefix 1 --chain_id_prefix 9 \
-  --incidence_matrix_path output/DataPlacementModel-v_2-b_6-r_6-k_3-λ_2-lb_1-ub_1/incidence_matrix.pickle
+  --incidence_matrix_path output/DataPlacementModel-v_2-b_6-r_6-k_2-λ_6-lb_1-ub_0/incidence_matrix.pickle
 ```
 
 2. Transfer configuration files:
@@ -201,11 +212,13 @@ docker cp output/generated_chain_table.csv hf3fs-mgmtd:/opt/3fs/etc/
 ```
 
 3. Configure administrative access:
+
 ```bash
-docker exec -it hf3fs-mgmtd /bin/sh
-/opt/3fs/bin/admin_cli -cfg /opt/3fs/etc/admin_cli.toml \
-  --config.mgmtd_client.mgmtd_server_addresses '["RDMA://192.168.1.1:8000"]' \
-  "user-add --root --admin 0 root"
+docker exec -it hf3fs-mgmtd /bin/bash
+```
+The admin token is printed to the console, save it to /opt/3fs/etc/token.txt.
+```bash
+/opt/3fs/bin/admin_cli -cfg /opt/3fs/etc/admin_cli.toml "user-add --root --admin 0 root"
 ```
 
 4. Initialize storage targets:
@@ -226,13 +239,19 @@ docker exec -it hf3fs-mgmtd /bin/sh
   "upload-chain-table --desc stage 1 /opt/3fs/etc/generated_chain_table.csv"
 ```
 
-## FUSE Client Setup <a name="fuse-client-setup"></a>
+6. List chains and chain tables to check if they have been correctly uploaded
+```bash
+/opt/3fs/bin/admin_cli -cfg /opt/3fs/etc/admin_cli.toml "list-chains"
+/opt/3fs/bin/admin_cli -cfg /opt/3fs/etc/admin_cli.toml "list-chain-tables"
+```
+
+## FUSE Client Setup on Meta Node <a name="fuse-client-setup"></a>
 ```bash
 docker run --name hf3fs-fuse \
   --privileged \
   -d --restart always \
   --network host \
-  --mount type=bind,source=/mnt/3fs,target=/mnt/3fs,bind-propagation=shared \
+  --mount type=bind,source=/3fs/stage,target=/3fs/stage,bind-propagation=shared \
   --env CLUSTER_ID=stage \
   --env FDB_CLUSTER=docker:docker@192.168.1.1:4500 \
   --env MGMTD_SERVER_ADDRESSES=RDMA://192.168.1.1:8000 \
@@ -240,6 +259,9 @@ docker run --name hf3fs-fuse \
   --env DEVICE_FILTER=mlx5_2 \
   --env TOKEN=${TOKEN} \
   hf3fs-fuse
+
+# Login hf3fs-fuse Docker container
+docker exec -it hf3fs-fuse /bin/bash
 
 # Verify mount
 mount | grep '/3fs/stage'

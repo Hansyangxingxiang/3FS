@@ -1,4 +1,4 @@
-FROM yangxingxiang/ubuntu2004-3fs-builder:latest as builder
+FROM ubuntu2004-3fs-builder:latest as builder
 
 WORKDIR /3fs
 COPY . .
