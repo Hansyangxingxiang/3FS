@@ -331,26 +331,26 @@ TEST_F(MgmtdOperatorTest, testHeartbeat) {
     {
       now_ = UtcTime::fromMicroseconds(10500);
       CO_AWAIT_ASSERT_OK(heartbeat(mgmtd, "clusterId", from(flat::NodeId(1), info1), now_));
-      auto node = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-      CO_ASSERT_EQ(node.base().type, flat::NodeType::MGMTD);
-      CO_ASSERT_EQ(node.base().status, flat::NodeStatus::HEARTBEAT_CONNECTED);
-      CO_ASSERT_EQ(node.base().app, info1.app) << fmt::format("node.app = {} info1.app = {}",
-                                                              serde::toJsonString(node.base().app),
+      auto* node = co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1));
+      CO_ASSERT_EQ(node->base().type, flat::NodeType::MGMTD);
+      CO_ASSERT_EQ(node->base().status, flat::NodeStatus::HEARTBEAT_CONNECTED);
+      CO_ASSERT_EQ(node->base().app, info1.app) << fmt::format("node.app = {} info1.app = {}",
+                                                              serde::toJsonString(node->base().app),
                                                               serde::toJsonString(info1.app));
-      CO_ASSERT_EQ(node.base().lastHeartbeatTs, now_);
+      CO_ASSERT_EQ(node->base().lastHeartbeatTs, now_);
     }
 
     // extend heartbeat: nothing changed
     {
       info1.hbVersion = flat::HeartbeatVersion{3};
-      auto node1 = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
+      auto base1 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
       now_ = UtcTime::fromMicroseconds(10501);
       CO_AWAIT_ASSERT_OK(heartbeat(mgmtd, "clusterId", from(flat::NodeId(1), info1), now_));
-      auto node2 = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-      CO_ASSERT_EQ(node2.base().lastHeartbeatTs, now_);
+      auto base2 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
+      CO_ASSERT_EQ(base2.lastHeartbeatTs, now_);
       // only lastHeartbeatTs differs
-      node2.base().lastHeartbeatTs = node1.base().lastHeartbeatTs;
-      CO_ASSERT_EQ(node1.base(), node2.base());
+      base2.lastHeartbeatTs = base1.lastHeartbeatTs;
+      CO_ASSERT_EQ(base1, base2);
     }
 
     // stale heartbeat version
@@ -368,13 +368,13 @@ TEST_F(MgmtdOperatorTest, testHeartbeat) {
       info2.app.serviceGroups[0].services.emplace("OtherService");
       CO_AWAIT_ASSERT_OK(heartbeat(mgmtd, "clusterId", from(flat::NodeId(1), info2), now_));
 
-      auto node = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-      CO_ASSERT_EQ(node.base().app, info2.app);
+      auto* node = co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1));
+      CO_ASSERT_EQ(node->base().app, info2.app);
     }
 
     // restart: lastHeartbeatTs changed
     {
-      auto node1 = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
+      auto base1 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
 
       auto info2 = info1;
       info2.app.hostname = "hostname0-2";
@@ -387,45 +387,45 @@ TEST_F(MgmtdOperatorTest, testHeartbeat) {
       info2.hbVersion = flat::HeartbeatVersion{5};
       CO_AWAIT_ASSERT_OK(heartbeat(mgmtd, "clusterId", from(flat::NodeId(1), info2), now_));
 
-      auto node2 = co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1));
+      auto base2 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
 
-      CO_ASSERT_EQ(node2->base().type, node1.base().type);
-      CO_ASSERT_EQ(node2->base().status, node1.base().status);
-      CO_ASSERT_EQ(node2->base().app, info2.app);
-      CO_ASSERT_EQ(node2->base().lastHeartbeatTs, now_);
+      CO_ASSERT_EQ(base2.type, base1.type);
+      CO_ASSERT_EQ(base2.status, base1.status);
+      CO_ASSERT_EQ(base2.app, info2.app);
+      CO_ASSERT_EQ(base2.lastHeartbeatTs, now_);
 
       info2.app.pid = 102;
       info2.hbVersion = flat::HeartbeatVersion{6};
       now_ = UtcTime::fromMicroseconds(10503);
       CO_AWAIT_ASSERT_OK(heartbeat(mgmtd, "clusterId", from(flat::NodeId(1), info2), now_));
 
-      node2 = co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1));
+      base2 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
 
-      CO_ASSERT_EQ(node2->base().type, node1.base().type);
-      CO_ASSERT_EQ(node2->base().status, node1.base().status);
-      CO_ASSERT_EQ(node2->base().app, info2.app);
-      CO_ASSERT_EQ(node2->base().lastHeartbeatTs, now_);
+      CO_ASSERT_EQ(base2.type, base1.type);
+      CO_ASSERT_EQ(base2.status, base1.status);
+      CO_ASSERT_EQ(base2.app, info2.app);
+      CO_ASSERT_EQ(base2.lastHeartbeatTs, now_);
     }
 
     // reconnected
     {
-      auto &innerNode = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-      innerNode.base().status = flat::NodeStatus::HEARTBEAT_FAILED;
+      auto* innerNode = co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1));
+      innerNode->base().status = flat::NodeStatus::HEARTBEAT_FAILED;
 
       now_ = UtcTime::fromMicroseconds(10504);
       info1.hbVersion = flat::HeartbeatVersion{7};
       CO_AWAIT_ASSERT_OK(heartbeat(mgmtd, "clusterId", from(flat::NodeId(1), info1), now_));
 
-      auto node = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-      CO_ASSERT_EQ(node.base().status, flat::NodeStatus::HEARTBEAT_CONNECTED);
-      CO_ASSERT_EQ(node.base().lastHeartbeatTs, now_);
+      auto* node = co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1));
+      CO_ASSERT_EQ(node->base().status, flat::NodeStatus::HEARTBEAT_CONNECTED);
+      CO_ASSERT_EQ(node->base().lastHeartbeatTs, now_);
     }
 
     // reject heartbeats from offlined nodes
     {
       // TODO: migrate to a formal method
-      auto &innerNode = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-      innerNode.base().status = flat::NodeStatus::DISABLED;
+      auto* innerNode = co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1));
+      innerNode->base().status = flat::NodeStatus::DISABLED;
 
       CO_AWAIT_ASSERT_ERROR(MgmtdCode::kHeartbeatFail,
                             heartbeat(mgmtd, "clusterId", from(flat::NodeId(1), info1), now_));
@@ -445,11 +445,11 @@ TEST_F(MgmtdOperatorTest, testHeartbeat) {
 
       CO_AWAIT_ASSERT_OK(
           heartbeat(mgmtd1, "clusterId", from(flat::NodeId(1), info1), UtcTime::fromMicroseconds(12500)));
-      auto node = *(co_await MgmtdTestHelper(mgmtd1).getNodeInfo(flat::NodeId(1)));
-      CO_ASSERT_EQ(node.base().type, flat::NodeType::MGMTD);
-      CO_ASSERT_EQ(node.base().status, flat::NodeStatus::HEARTBEAT_CONNECTED);
-      CO_ASSERT_EQ(node.base().app, info1.app);
-      CO_ASSERT_EQ(node.base().lastHeartbeatTs, now_);
+      auto* node = co_await MgmtdTestHelper(mgmtd1).getNodeInfo(flat::NodeId(1));
+      CO_ASSERT_EQ(node->base().type, flat::NodeType::MGMTD);
+      CO_ASSERT_EQ(node->base().status, flat::NodeStatus::HEARTBEAT_CONNECTED);
+      CO_ASSERT_EQ(node->base().app, info1.app);
+      CO_ASSERT_EQ(node->base().lastHeartbeatTs, now_);
     }
   }());
 }
@@ -491,7 +491,7 @@ TEST_F(MgmtdOperatorTest, testRecovery) {
 
     co_await MgmtdTestHelper(*mgmtd1).extendLease();
 
-    auto node = co_await MgmtdTestHelper(*mgmtd1).getNodeInfo(flat::NodeId(1));
+    auto* node = co_await MgmtdTestHelper(*mgmtd1).getNodeInfo(flat::NodeId(1));
     CO_ASSERT_EQ(node->base().status, flat::NodeStatus::HEARTBEAT_CONNECTING);
 
     node = co_await MgmtdTestHelper(*mgmtd1).getNodeInfo(flat::NodeId(2));
@@ -519,13 +519,13 @@ TEST_F(MgmtdOperatorTest, testDisable) {
     CO_AWAIT_ASSERT_OK(registerNode(mgmtd, "clusterId", flat::NodeId(1), flat::NodeType::MGMTD));
     CO_AWAIT_ASSERT_OK(disableNode(mgmtd, "clusterId", flat::NodeId(1)));
 
-    auto info1 = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-    CO_ASSERT_EQ(info1.base().status, flat::NodeStatus::DISABLED);
+    auto base1 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
+    CO_ASSERT_EQ(base1.status, flat::NodeStatus::DISABLED);
 
     // duplicated offline has no effect
     CO_AWAIT_ASSERT_OK(disableNode(mgmtd, "clusterId", flat::NodeId(1)));
-    auto info2 = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-    CO_ASSERT_EQ(info1.base(), info2.base());
+    auto base2 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
+    CO_ASSERT_EQ(base1, base2);
   }());
 }
 
@@ -549,19 +549,19 @@ TEST_F(MgmtdOperatorTest, testEnable) {
     hb.set(flat::MgmtdHeartbeatInfo{});
     CO_AWAIT_ASSERT_OK(heartbeat(mgmtd, "clusterId", from(flat::NodeId(1), hb), now_));
 
-    auto info1 = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-    CO_ASSERT_EQ(info1.base().status, flat::NodeStatus::HEARTBEAT_CONNECTED);
+    auto base1 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
+    CO_ASSERT_EQ(base1.status, flat::NodeStatus::HEARTBEAT_CONNECTED);
 
     // online an online node has no effect
     CO_AWAIT_ASSERT_OK(enableNode(mgmtd, "clusterId", flat::NodeId(1)));
-    auto info2 = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-    CO_ASSERT_EQ(info1.base(), info2.base());
+    auto base2 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
+    CO_ASSERT_EQ(base1, base2);
 
     CO_AWAIT_ASSERT_OK(disableNode(mgmtd, "clusterId", flat::NodeId(1)));
     CO_AWAIT_ASSERT_OK(enableNode(mgmtd, "clusterId", flat::NodeId(1)));
 
-    auto info3 = *(co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)));
-    CO_ASSERT_EQ(info3.base().status, flat::NodeStatus::HEARTBEAT_CONNECTING);
+    auto base3 = (co_await MgmtdTestHelper(mgmtd).getNodeInfo(flat::NodeId(1)))->base();
+    CO_ASSERT_EQ(base3.status, flat::NodeStatus::HEARTBEAT_CONNECTING);
   }());
 }
 
@@ -625,5 +625,62 @@ TEST_F(MgmtdOperatorTest, testSetNodeTags) {
     CO_ASSERT_EQ(setRes->info, info1);
   };
   folly::coro::blockingWait(f());
+}
+
+TEST_F(MgmtdOperatorTest, testSetChainTableVersionMonotonicity) {
+  folly::coro::blockingWait([&]() -> CoTask<void> {
+    MgmtdOperator mgmtd(env_, defaultConfig_);
+    co_await MgmtdTestHelper(mgmtd).extendLease();
+
+    // Prepare two Chains
+    co_await MgmtdTestHelper(mgmtd).setRoutingInfo([](flat::RoutingInfo &ri) {
+      for (auto cid : {flat::ChainId(1), flat::ChainId(2)}) {
+        flat::ChainInfo chain;
+        chain.chainId = cid;
+        chain.chainVersion = flat::ChainVersion(1);
+        flat::ChainTargetInfo cti;
+        cti.targetId = flat::TargetId(100 + (uint32_t)cid);
+        cti.publicState = flat::PublicTargetState::SERVING;
+        chain.targets.push_back(cti);
+        ri.chains[cid] = chain;
+      }
+    });
+
+    // Step 1: upload ChainTable, with version 1
+    {
+      mgmtd::SetChainTableReq req;
+      req.clusterId = "clusterId";
+      req.chainTableId = flat::ChainTableId(1);
+      req.chains = {flat::ChainId(1)};
+      req.desc = "old_desc";
+      auto ret = co_await mgmtd.setChainTable(req, {});
+      CO_ASSERT_OK(ret);
+      CO_ASSERT_EQ(ret->chainTableVersion, flat::ChainTableVersion(1));
+    }
+
+    // Step 2: update chains of ChainTable, increase version to 2
+    {
+      mgmtd::SetChainTableReq req;
+      req.clusterId = "clusterId";
+      req.chainTableId = flat::ChainTableId(1);
+      req.chains = {flat::ChainId(1), flat::ChainId(2)};
+      req.desc = "old_desc";
+      auto ret = co_await mgmtd.setChainTable(req, {});
+      CO_ASSERT_OK(ret);
+      CO_ASSERT_EQ(ret->chainTableVersion, flat::ChainTableVersion(2));
+    }
+
+    // Step 3: update desc of ChainTable, the version should be 3
+    {
+      mgmtd::SetChainTableReq req;
+      req.clusterId = "clusterId";
+      req.chainTableId = flat::ChainTableId(1);
+      req.chains = {flat::ChainId(1), flat::ChainId(2)};  // keep same
+      req.desc = "new_desc";                              // only desc changed
+      auto ret = co_await mgmtd.setChainTable(req, {});
+      CO_ASSERT_OK(ret);
+      CO_ASSERT_EQ(ret->chainTableVersion, flat::ChainTableVersion(3));
+    }
+  }());
 }
 }  // namespace hf3fs::mgmtd::testing

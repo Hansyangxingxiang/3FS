@@ -168,7 +168,14 @@ impl Engine {
         self.allow_to_allocate.store(val, Ordering::Release)
     }
 
-    pub fn speed_up_quit(&self) {
+    /// Intentionally leaks Arc pointers to avoid shutdown overhead.
+    ///
+    /// # Safety
+    ///
+    /// This function **must only be called** when the process is guaranteed to exit immediately afterwards.
+    /// Calling it in any other context (e.g., during a restart, in a test) will cause permanent memory leaks
+    /// of the Arc-managed data. This is an internal method intended to be used exactly once in the process exit path.
+    pub unsafe fn speed_up_quit(&self) {
         // There is a memory leak and should only be called when the process exits.
         let _ = Arc::into_raw(self.meta_cache.clone());
         let _ = Arc::into_raw(self.writing_list.clone());
@@ -295,6 +302,10 @@ impl Engine {
 
         // 1. prepare update info.
         let data = if req.length != 0 {
+            // SAFETY: req.data pointer must be valid and remain live for the duration of this function.
+            // The slice is consumed synchronously and immediately within safe_write/copy_on_write calls
+            // (lines 386-394, 398-404, 418-424). If writes become asynchronous in the future,
+            // this would require refactoring to take ownership of the data (e.g., via Vec<u8>).
             let data =
                 unsafe { std::slice::from_raw_parts(req.data as *const _, req.length as usize) };
             let checksum = crc32c::crc32c(data);
@@ -787,7 +798,11 @@ mod tests {
             assert_eq!(engine.used_size().allocated_size, s);
             assert_eq!(engine.used_size().reserved_size, s);
 
-            engine.speed_up_quit();
+            // SAFETY: This is an exceptional case for testing the function itself.
+            // In normal usage, speed_up_quit() should ONLY be called immediately before process exit.
+            // This test intentionally violates that contract to verify the function's behavior,
+            // but this will cause memory leaks that persist for the remainder of the test process.
+            unsafe { engine.speed_up_quit(); }
         }
 
         {
